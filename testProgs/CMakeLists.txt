@@ -1,0 +1,90 @@
+# CMakeLists.txt testProgs directory
+
+# headers
+SET(COMMON_HDRS
+playCommon.hh
+)
+
+# source files for MediaPreEncoderServer
+SET(OPEN_RTSP_SRCS 
+openRTSP.cpp
+playCommon.cpp
+)
+
+SET(PLAY_SIP_SRCS 
+playCommon.cpp
+playSIP.cpp
+)
+
+SET(TEST_AMR_AUDIO_STREAMER_SRCS 
+testAMRAudioStreamer.cpp
+)
+
+SET(TEST_H264_VIDEO_STREAMER_SRCS 
+testH264VideoStreamer.cpp
+)
+
+SET(TEST_H265_VIDEO_STREAMER_SRCS 
+testH265VideoStreamer.cpp
+)
+
+SET(ON_DEMAND_RTSP_SERVER_SRCS 
+testOnDemandRTSPServer.cpp
+)
+
+SET(TEST_RTSP_CLIENT_SRCS 
+testRTSPClient.cpp
+)
+
+SET(TEST_XXX_LIBS
+BasicUsageEnvironment
+groupsock
+liveMedia
+UsageEnvironment
+)
+
+if (WIN32)
+    SET(TEST_XXX_LIBS ${TEST_XXX_LIBS} ws2_32 winmm)
+endif()
+
+ADD_EXECUTABLE(openRTSP ${COMMON_HDRS} ${OPEN_RTSP_SRCS})
+TARGET_LINK_LIBRARIES(
+openRTSP
+${TEST_XXX_LIBS}
+) 
+
+ADD_EXECUTABLE(playSip ${COMMON_HDRS} ${PLAY_SIP_SRCS})
+TARGET_LINK_LIBRARIES(
+playSip
+${TEST_XXX_LIBS}
+) 
+
+ADD_EXECUTABLE(testAmrAudioStreamer ${COMMON_HDRS} ${TEST_AMR_AUDIO_STREAMER_SRCS})
+TARGET_LINK_LIBRARIES(
+testAmrAudioStreamer
+${TEST_XXX_LIBS}
+) 
+
+ADD_EXECUTABLE(testH264VideoStreamer ${COMMON_HDRS} ${TEST_H264_VIDEO_STREAMER_SRCS})
+TARGET_LINK_LIBRARIES(
+testH264VideoStreamer
+${TEST_XXX_LIBS}
+) 
+
+ADD_EXECUTABLE(testH265VideoStreamer ${COMMON_HDRS} ${TEST_H265_VIDEO_STREAMER_SRCS})
+TARGET_LINK_LIBRARIES(
+testH265VideoStreamer
+${TEST_XXX_LIBS}
+) 
+
+ADD_EXECUTABLE(testOnDemandRTSPServer ${COMMON_HDRS} ${ON_DEMAND_RTSP_SERVER_SRCS})
+TARGET_LINK_LIBRARIES(
+testOnDemandRTSPServer
+${TEST_XXX_LIBS}
+) 
+
+ADD_EXECUTABLE(testRTSPClient ${COMMON_HDRS} ${TEST_RTSP_CLIENT_SRCS})
+TARGET_LINK_LIBRARIES(
+testRTSPClient
+${TEST_XXX_LIBS}
+) 

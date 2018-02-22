@@ -1,0 +1,7 @@
+# CMakeLists.txt in liveMedia
+
+FILE(GLOB_RECURSE LIVE_MEDIA_SRCS      *c *.cpp)
+
+FILE(GLOB_RECURSE LIVE_MEDIA_HEADERS include/*.cpp)
+
+ADD_LIBRARY( liveMedia STATIC ${LIVE_MEDIA_HEADERS} ${LIVE_MEDIA_SRCS})
