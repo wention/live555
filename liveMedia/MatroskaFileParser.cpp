@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2018 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
 // A parser for a Matroska file.
 // Implementation
 
@@ -37,6 +37,7 @@ MatroskaFileParser::MatroskaFileParser(MatroskaFile& ourFile, FramedSource* inpu
   if (ourDemux == NULL) {
     // Initialization
     fCurrentParseState = PARSING_START_OF_FILE;
+
     continueParsing();
   } else {
     fCurrentParseState = LOOKING_FOR_CLUSTER;
@@ -84,6 +85,11 @@ void MatroskaFileParser::seekToTime(double& seekNPT) {
   }
 }
 
+void MatroskaFileParser::pause() {
+  resetPresentationTimes();
+  // to ensure that we presentation times continue from 'wall clock' time after we resume
+}
+
 void MatroskaFileParser
 ::continueParsing(void* clientData, unsigned char* /*ptr*/, unsigned /*size*/, struct timeval /*presentationTime*/) {
   ((MatroskaFileParser*)clientData)->continueParsing();
@@ -91,8 +97,6 @@ void MatroskaFileParser
 
 void MatroskaFileParser::continueParsing() {
   if (fInputSource != NULL) {
-    if (fInputSource->isCurrentlyAwaitingData()) return; // Our input source is currently being read. Wait until that read completes
-
     if (!parse()) {
       // We didn't complete the parsing, because we had to read more data from the source, or because we're waiting for
       // another read from downstream.  Once that happens, we'll get called again.
@@ -107,9 +111,14 @@ void MatroskaFileParser::continueParsing() {
 Boolean MatroskaFileParser::parse() {
   Boolean areDone = False;
 
+  if (fInputSource->isCurrentlyAwaitingData()) return False;
+      // Our input source is currently being read. Wait until that read completes
   try {
     skipRemainingHeaderBytes(True); // if any
     do {
+      if (fInputSource->isCurrentlyAwaitingData()) return False;
+          // Our input source is currently being read. Wait until that read completes
+
       switch (fCurrentParseState) {
         case PARSING_START_OF_FILE: {
 	  areDone = parseStartOfFile();
@@ -460,6 +469,10 @@ Boolean MatroskaFileParser::parseTrack() {
 	      track->mimeType = "video/THEORA";
 	    } else if (strncmp(codecID, "S_TEXT", 6) == 0) {
 	      track->mimeType = "text/T140";
+	    } else if (strncmp(codecID, "V_MJPEG", 7) == 0) {
+	      track->mimeType = "video/JPEG";
+	    } else if (strncmp(codecID, "V_UNCOMPRESSED", 14) == 0) {
+	      track->mimeType = "video/RAW";
 	    }
 	  } else {
 	    delete[] codecID;
@@ -525,6 +538,7 @@ Boolean MatroskaFileParser::parseTrack() {
 #ifdef DEBUG
 	  fprintf(stderr, "\tPixel Width %d\n", pixelWidth);
 #endif
+      if (track != NULL) track->pixelWidth = pixelWidth;
 	}
 	break;
       }
@@ -534,6 +548,7 @@ Boolean MatroskaFileParser::parseTrack() {
 #ifdef DEBUG
 	  fprintf(stderr, "\tPixel Height %d\n", pixelHeight);
 #endif
+      if (track != NULL) track->pixelHeight = pixelHeight;
 	}
 	break;
       }
@@ -604,6 +619,7 @@ Boolean MatroskaFileParser::parseTrack() {
 #ifdef DEBUG
 	  fprintf(stderr, "\tBit Depth %d\n", bitDepth);
 #endif
+	  if (track != NULL) track->bitDepth = bitDepth;
 	}
 	break;
       }
@@ -652,6 +668,70 @@ Boolean MatroskaFileParser::parseTrack() {
 	// Note: We don't currently support encryption at all.  Therefore, we disable this track:
 	if (track != NULL) track->isEnabled = False;
 	// Fall through to...
+      }
+      case MATROSKA_ID_COLOR_SPACE: {
+	u_int8_t* colourSpace;
+	unsigned colourSpaceSize;
+	if (parseEBMLVal_binary(size, colourSpace)) {
+	  colourSpaceSize = (unsigned)size.val();
+#ifdef DEBUG
+	  fprintf(stderr, "\tColor space : %02x %02x %02x %02x\n", colourSpace[0], colourSpace[1], colourSpace[2], colourSpace[3]);
+#endif
+      if ((track != NULL) && (colourSpaceSize == 4)) {
+            //convert to sampling value (rfc 4175)
+        if ((strncmp((const char*)colourSpace, "I420", 4) == 0) || (strncmp((const char*)colourSpace, "IYUV", 4) == 0)){ 
+            track->colorSampling = "YCbCr-4:2:0";
+        }
+        else if ((strncmp((const char*)colourSpace, "YUY2", 4) == 0) || (strncmp((const char*)colourSpace, "UYVY", 4) == 0)){
+            track->colorSampling = "YCbCr-4:2:2";
+        }
+        else if (strncmp((const char*)colourSpace, "AYUV", 4) == 0) {
+            track->colorSampling = "YCbCr-4:4:4";
+        }
+        else if ((strncmp((const char*)colourSpace, "Y41P", 4) == 0) || (strncmp((const char*)colourSpace, "Y41T", 4) == 0)) {
+            track->colorSampling = "YCbCr-4:1:1";
+        }
+        else if (strncmp((const char*)colourSpace, "RGBA", 4) == 0) {
+            track->colorSampling = "RGBA";
+        }
+        else if (strncmp((const char*)colourSpace, "BGRA", 4) == 0) {
+            track->colorSampling = "BGRA";
+        }
+      } else {
+        delete[] colourSpace;
+      }
+        }
+        break;
+      }
+    case MATROSKA_ID_PRIMARIES: {
+        unsigned primaries;
+        if (parseEBMLVal_unsigned(size, primaries)) {
+#ifdef DEBUG
+          fprintf(stderr, "\tPrimaries %u\n", primaries);
+#endif
+        if (track != NULL) {
+            switch (primaries) {
+                  case 1: //ITU-R BT.709
+                    track->colorimetry = "BT709-2";
+                    break;
+                  case 7: //SMPTE 240M
+                    track->colorimetry = "SMPTE240M";
+                    break;
+                  case 2: //Unspecified
+                  case 3: //Reserved
+                  case 4: //ITU-R BT.470M
+                  case 5: //ITU-R BT.470BG
+                  case 6: //SMPTE 170M
+                  case 8: //FILM
+                  case 9: //ITU-R BT.2020
+                  default:
+#ifdef DEBUG
+                     fprintf(stderr, "\tUnsupported color primaries %u\n", primaries);
+#endif
+                    break;
+                }
+            }
+        }
       }
       default: { // We don't process this header, so just skip over it:
 	skipHeader(size);
@@ -1022,18 +1102,18 @@ Boolean MatroskaFileParser::deliverFrameWithinBlock() {
     u_int8_t const* specialFrameSource = NULL;
     u_int8_t const opusCommentHeader[16]
       = {'O','p','u','s','T','a','g','s', 0, 0, 0, 0, 0, 0, 0, 0};
-    if (track->codecIsOpus && demuxedTrack->fOpusTrackNumber < 2) {
+    if (track->codecIsOpus && demuxedTrack->fOpusFrameNumber < 2) {
       // Special case for Opus audio.  The first frame (the 'configuration' header) comes from
       // the 'private data'.  The second frame (the 'comment' header) comes is synthesized by
       // us here:
-      if (demuxedTrack->fOpusTrackNumber == 0) {
+      if (demuxedTrack->fOpusFrameNumber == 0) {
 	specialFrameSource = track->codecPrivate;
 	frameSize = track->codecPrivateSize;
-      } else { // demuxedTrack->fOpusTrackNumber == 1
+      } else { // demuxedTrack->fOpusFrameNumber == 1
 	specialFrameSource = opusCommentHeader;
 	frameSize = sizeof opusCommentHeader;
       }
-      ++demuxedTrack->fOpusTrackNumber;
+      ++demuxedTrack->fOpusFrameNumber;
     } else {
       frameSize = fFrameSizesWithinBlock[fNextFrameNumberToDeliver];
       if (track->haveSubframes()) {
@@ -1058,8 +1138,8 @@ Boolean MatroskaFileParser::deliverFrameWithinBlock() {
     double pt = (fClusterTimecode+fBlockTimecode)*(fOurFile.fTimecodeScale/1000000000.0)
       + fNextFrameNumberToDeliver*(track->defaultDuration/1000000000.0);
     if (fPresentationTimeOffset == 0.0) {
-      // This is the first time we've computed a presentation time.  Compute an offset to make the presentation times aligned
-      // with 'wall clock' time:
+      // This is the first time we've computed a presentation time.
+      // Compute an offset to make the presentation times aligned with 'wall clock' time:
       struct timeval timeNow;
       gettimeofday(&timeNow, NULL);
       double ptNow = timeNow.tv_sec + timeNow.tv_usec/1000000.0;
@@ -1151,6 +1231,7 @@ void MatroskaFileParser::deliverFrameBytes() {
 
     MatroskaDemuxedTrack* demuxedTrack = fOurDemux->lookupDemuxedTrack(fBlockTrackNumber);
     if (demuxedTrack == NULL) break; // shouldn't happen
+    if (!demuxedTrack->isCurrentlyAwaitingData()) return; // wait until we're asked for data
 
     unsigned const BANK_SIZE = bankSize();
     while (fCurFrameNumBytesToGet > 0) {
@@ -1430,8 +1511,18 @@ void MatroskaFileParser::seekToEndOfFile() {
 }
 
 void MatroskaFileParser::resetStateAfterSeeking() {
+  // Presentation times aren't affected by the seek; they continue advancing as normal.
+  // Therefore, ensure that they continue to be aligned with 'wall clock' time:
+  resetPresentationTimes();
+
   // Because we're resuming parsing after seeking to a new position in the file, reset the parser state:
   fCurOffsetInFile = fSavedCurOffsetInFile = 0;
   fCurOffsetWithinFrame = fSavedCurOffsetWithinFrame = 0;
   flushInput();
+}
+
+void MatroskaFileParser::resetPresentationTimes() {
+  if (fOurDemux != NULL) fOurDemux->resetState();
+
+  fPresentationTimeOffset = 0.0;
 }

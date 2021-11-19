@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2018 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
 // RTP sink for a common kind of payload format: Those which pack multiple,
 // complete codec frames (as many as possible) into each RTP packet.
 // Implementation
@@ -35,8 +35,8 @@ void MultiFramedRTPSink::setPacketSizes(unsigned preferredPacketSize,
 }
 
 #ifndef RTP_PAYLOAD_MAX_SIZE
-#define RTP_PAYLOAD_MAX_SIZE 1456
-      // Default max packet size (1500, minus allowance for IP, UDP, UMTP headers)
+#define RTP_PAYLOAD_MAX_SIZE 1452
+      // Default max packet size (1500, minus allowance for IP, UDP headers)
       // (Also, make it a multiple of 4 bytes, just in case that matters.)
 #endif
 #ifndef RTP_PAYLOAD_PREFERRED_SIZE
@@ -336,7 +336,7 @@ void MultiFramedRTPSink
     //      read would overflow the packet, or
     // (iii) it contains the last fragment of a fragmented frame, and we
     //      don't allow anything else to follow this or
-    // (iv) one frame per packet is allowed:
+    // (iv) only one frame per packet is allowed:
     if (fOutBuf->isPreferredSize()
         || fOutBuf->wouldOverflow(numFrameBytesToUse)
         || (fPreviousFrameEndedFragmentation &&
