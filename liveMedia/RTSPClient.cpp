@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2021 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A generic RTSP client
 // Implementation
 
@@ -248,20 +248,20 @@ Boolean RTSPClient::parseRTSPURL(char const* url,
 				 char const** urlSuffix) {
   do {
     // Parse the URL as "rtsp://[<username>[:<password>]@]<server-address-or-name>[:<port>][/<stream-name>]" (or "rtsps://...")
-    char const* prefix1 = "rtsp://";
-    unsigned const prefix1Length = 7;
-    char const* prefix2 = "rtsps://";
-    unsigned const prefix2Length = 8;
+    char const* rtspPrefix = "rtsp://";
+    unsigned const rtspPrefixLength = 7;
+    char const* rtspsPrefix = "rtsps://";
+    unsigned const rtspsPrefixLength = 8;
 
     portNumBits defaultPortNumber;
     char const* from;
-    if (_strncasecmp(url, prefix1, prefix1Length) == 0) {
+    if (_strncasecmp(url, rtspPrefix, rtspPrefixLength) == 0) {
       defaultPortNumber = 554;
-      from = &url[prefix1Length];
-    } else if (_strncasecmp(url, prefix2, prefix2Length) == 0) {
+      from = &url[rtspPrefixLength];
+    } else if (_strncasecmp(url, rtspsPrefix, rtspsPrefixLength) == 0) {
       useTLS();
       defaultPortNumber = 322;
-      from = &url[prefix2Length];
+      from = &url[rtspsPrefixLength];
     } else {
       envir().setResultMsg("URL does not begin with \"rtsp://\" or \"rtsps://\"");
       break;
@@ -1021,8 +1021,9 @@ char* RTSPClient::createKeyMgmtString(char const* url, MediaSubsession const& su
   } else {
     char const* keyMgmtFmt = "KeyMgmt: prot=mikey; uri=\"%s\"; data=\"%s\"\r\n";
     char* base64EncodedData = base64Encode((char*)mikeyMessage, mikeyMessageSize);
-    unsigned keyMgmtSize = strlen(keyMgmtFmt)
-      + strlen(url) + strlen(base64EncodedData);
+    delete[] mikeyMessage;
+    
+    unsigned keyMgmtSize = strlen(keyMgmtFmt) + strlen(url) + strlen(base64EncodedData);
     keyMgmtStr = new char[keyMgmtSize];
     sprintf(keyMgmtStr, keyMgmtFmt,
 	    url, base64EncodedData);
@@ -1068,13 +1069,14 @@ void RTSPClient::handleIncomingRequest() {
   char cseq[RTSP_PARAM_STRING_MAX];
   char sessionId[RTSP_PARAM_STRING_MAX];
   unsigned contentLength;
+  Boolean urlIsRTSPS;
   if (!parseRTSPRequestString(fResponseBuffer, fResponseBytesAlreadySeen,
 			      cmdName, sizeof cmdName,
 			      urlPreSuffix, sizeof urlPreSuffix,
 			      urlSuffix, sizeof urlSuffix,
 			      cseq, sizeof cseq,
 			      sessionId, sizeof sessionId,
-			      contentLength)) {
+			      contentLength, urlIsRTSPS)) {
     return;
   } else {
     if (fVerbosityLevel >= 1) {
@@ -1594,7 +1596,9 @@ void RTSPClient::connectionHandler1() {
   do {
     int err = 0;
     SOCKLEN_T len = sizeof err;
-    if (getsockopt(fInputSocketNum, SOL_SOCKET, SO_ERROR, (char*)&err, &len) < 0 || err != 0) {
+    // Note: Normally "fOutputSocketNum" == "fInputSocketNum" here, except when we're connecting
+    // to the second (i.e., "POST") connection when doing RTSP-over-HTTP:
+    if (getsockopt(fOutputSocketNum, SOL_SOCKET, SO_ERROR, (char*)&err, &len) < 0 || err != 0) {
       envir().setResultErrMsg("Connection to server failed: ", err);
       if (fVerbosityLevel >= 1) envir() << "..." << envir().getResultMsg() << "\n";
       break;
