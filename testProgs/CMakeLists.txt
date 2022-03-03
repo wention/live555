@@ -87,7 +87,6 @@ add_executable(testH264VideotoHLSSegments ${COMMON_HDRS} ${TEST_H264_VIDEO_TO_HL
 target_link_libraries(
     testH264VideotoHLSSegments
     ${TEST_XXX_LIBS}
-    hlsProxy
 )
 
 add_executable(testH265VideoStreamer ${COMMON_HDRS} ${TEST_H265_VIDEO_STREAMER_SRCS})
