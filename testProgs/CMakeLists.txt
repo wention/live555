@@ -1,46 +1,48 @@
 # CMakeLists.txt testProgs directory
 
-# headers
-set(COMMON_HDRS
+set(PLAY_COMMON_SRCS
     playCommon.hh
-    )
-
-set(COMMON_SRCS
     playCommon.cpp
-    )
+)
+
+set(HELPER_SRCS
+    announceURL.hh
+    announceURL.cpp
+)
 
 # source files for MediaPreEncoderServer
 set(OPEN_RTSP_SRCS
-    ${COMMON_SRCS}
+    ${PLAY_COMMON_SRCS}
     openRTSP.cpp
-    )
+)
 
 set(PLAY_SIP_SRCS
-    ${COMMON_SRCS}
+    ${PLAY_COMMON_SRCS}
     playSIP.cpp
     )
 
 set(TEST_AMR_AUDIO_STREAMER_SRCS
-    ${COMMON_SRCS}
+    ${HELPER_SRCS}
     testAMRAudioStreamer.cpp
     )
 
 set(TEST_H264_VIDEO_STREAMER_SRCS
-    ${COMMON_SRCS}
+    ${HELPER_SRCS}
     testH264VideoStreamer.cpp
     )
 
 set(TEST_H264_VIDEO_TO_HLS_SEGMENTS_SRCS
+    ${HELPER_SRCS}
     testH264VideoToHLSSegments.cpp
     )
 
 set(TEST_H265_VIDEO_STREAMER_SRCS
-    ${COMMON_SRCS}
+    ${HELPER_SRCS}
     testH265VideoStreamer.cpp
     )
 
-set(ON_DEMAND_RTSP_SERVER_SRCS
-    ${COMMON_SRCS}
+set(TEST_ON_DEMAND_RTSP_SERVER_SRCS
+    ${HELPER_SRCS}
     testOnDemandRTSPServer.cpp
     )
 
@@ -49,59 +51,60 @@ set(TEST_RTSP_CLIENT_SRCS
     )
 
 set(TEST_XXX_LIBS
-    BasicUsageEnvironment
-    groupsock
     liveMedia
+    groupsock
+    BasicUsageEnvironment
     UsageEnvironment
+    ${LINK_LIBS}
     )
 
 if (WIN32)
     set(TEST_XXX_LIBS ${TEST_XXX_LIBS} ws2_32 winmm)
 endif()
 
-add_executable(openRTSP ${COMMON_HDRS} ${OPEN_RTSP_SRCS})
+add_executable(openRTSP ${OPEN_RTSP_SRCS})
 target_link_libraries(
     openRTSP
     ${TEST_XXX_LIBS}
     )
 
-add_executable(playSIP ${COMMON_HDRS} ${PLAY_SIP_SRCS})
+add_executable(playSIP ${PLAY_SIP_SRCS})
 target_link_libraries(
     playSIP
     ${TEST_XXX_LIBS}
     )
 
-add_executable(testAmrAudioStreamer ${COMMON_HDRS} ${TEST_AMR_AUDIO_STREAMER_SRCS})
+add_executable(testAmrAudioStreamer ${TEST_AMR_AUDIO_STREAMER_SRCS})
 target_link_libraries(
     testAmrAudioStreamer
     ${TEST_XXX_LIBS}
     )
 
-add_executable(testH264VideoStreamer ${COMMON_HDRS} ${TEST_H264_VIDEO_STREAMER_SRCS})
+add_executable(testH264VideoStreamer ${TEST_H264_VIDEO_STREAMER_SRCS})
 target_link_libraries(
     testH264VideoStreamer
     ${TEST_XXX_LIBS}
     )
 
-add_executable(testH264VideotoHLSSegments ${COMMON_HDRS} ${TEST_H264_VIDEO_TO_HLS_SEGMENTS_SRCS})
+add_executable(testH264VideotoHLSSegments ${TEST_H264_VIDEO_TO_HLS_SEGMENTS_SRCS})
 target_link_libraries(
     testH264VideotoHLSSegments
     ${TEST_XXX_LIBS}
 )
 
-add_executable(testH265VideoStreamer ${COMMON_HDRS} ${TEST_H265_VIDEO_STREAMER_SRCS})
+add_executable(testH265VideoStreamer ${TEST_H265_VIDEO_STREAMER_SRCS})
 target_link_libraries(
     testH265VideoStreamer
     ${TEST_XXX_LIBS}
     )
 
-add_executable(testOnDemandRTSPServer ${COMMON_HDRS} ${ON_DEMAND_RTSP_SERVER_SRCS})
+add_executable(testOnDemandRTSPServer ${TEST_ON_DEMAND_RTSP_SERVER_SRCS})
 target_link_libraries(
     testOnDemandRTSPServer
     ${TEST_XXX_LIBS}
     )
 
-add_executable(testRTSPClient ${COMMON_HDRS} ${TEST_RTSP_CLIENT_SRCS})
+add_executable(testRTSPClient ${TEST_RTSP_CLIENT_SRCS})
 target_link_libraries(
     testRTSPClient
     ${TEST_XXX_LIBS}

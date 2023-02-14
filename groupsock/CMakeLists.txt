@@ -8,7 +8,7 @@ set(GROUPSOCK_SRCS
     IOHandlers.cpp
     NetAddress.cpp
     NetInterface.cpp
-    )
+)
 
 set(GROUPSOCK_HEADERS
     include/GroupEId.hh
@@ -19,10 +19,9 @@ set(GROUPSOCK_HEADERS
     include/NetAddress.hh
     include/NetInterface.hh
     include/NetCommon.h
-    )
+)
 
-include_directories(
-    ${live555Includes}
-    )
-
-add_library(groupsock STATIC ${GROUPSOCK_HEADERS} ${GROUPSOCK_SRCS})
+add_library(groupsock
+    ${GROUPSOCK_HEADERS}
+    ${GROUPSOCK_SRCS}
+)

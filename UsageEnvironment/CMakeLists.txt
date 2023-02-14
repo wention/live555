@@ -18,4 +18,7 @@ include_directories(
     ${live555Includes}
     )
 
-add_library(UsageEnvironment STATIC ${USAGE_ENVIRONMENT_HEADERS} ${USAGE_ENVIRONMENT_SRCS})
+add_library(UsageEnvironment
+    ${USAGE_ENVIRONMENT_HEADERS}
+    ${USAGE_ENVIRONMENT_SRCS}
+)

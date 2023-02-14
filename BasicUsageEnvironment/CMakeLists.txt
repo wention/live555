@@ -18,8 +18,4 @@ set(BASIC_USAGE_ENVIRONMENT_HEADERS
     include/HandlerSet.hh
     )
 
-include_directories(
-    ${live555Includes}
-    )
-
-add_library(BasicUsageEnvironment STATIC ${BASIC_USAGE_ENVIRONMENT_HEADERS} ${BASIC_USAGE_ENVIRONMENT_SRCS})
+add_library(BasicUsageEnvironment ${BASIC_USAGE_ENVIRONMENT_HEADERS} ${BASIC_USAGE_ENVIRONMENT_SRCS})
