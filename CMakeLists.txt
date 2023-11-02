@@ -25,7 +25,7 @@ if (NOT OpenSSL_FOUND)
 endif()
 
 if (MSVC OR MINGW)
-    set(CMAKE_STATIC_LIBRARY_SUFFIX ".lib.a")
+    set(CMAKE_STATIC_LIBRARY_SUFFIX ".lib")
 endif()
 
 
